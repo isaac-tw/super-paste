@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Quick Paste Hotkeys",
+  "version": "1.0",
+  "description": "Paste predefined text using custom hotkeys.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "paste_text_1": {
+      "suggested_key": { "default": "Ctrl+Shift+1" },
+      "description": "Paste first predefined text"
+    },
+    "paste_text_2": {
+      "suggested_key": { "default": "Ctrl+Shift+2" },
+      "description": "Paste second predefined text"
+    }
+  }
+}
