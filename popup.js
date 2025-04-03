@@ -1,53 +1,66 @@
-document.querySelectorAll("input.hotkey").forEach(input => {
-  input.addEventListener("keydown", (event) => {
-      event.preventDefault(); // Prevent default browser actions
+const hotkeyContainer = document.getElementById("hotkey-container");
+const addHotkeyButton = document.getElementById("add-hotkey");
 
-      let keys = [];
-      if (event.altKey) keys.push("Alt");
-      if (event.shiftKey) keys.push("Shift");
-      if (event.ctrlKey) keys.push("Ctrl");
-      if (event.metaKey) keys.push("Meta"); // Cmd on Mac
+function createHotkeyInput(index, hotkey = "", text = "") {
+    const div = document.createElement("div");
+    div.classList.add("hotkey-entry");
+    div.dataset.index = index;
 
-      // Only store the last non-modifier key
-      if (!["Alt", "Shift", "Ctrl", "Meta"].includes(event.key)) {
-          keys.push(event.key.toUpperCase());
-      }
+    div.innerHTML = `
+        <label>Hotkey: <input class="hotkey" type="text" placeholder="Press keys..." readonly value="${hotkey}"></label>
+        <input class="text" type="text" placeholder="Text to paste" value="${text}">
+        <button class="remove">&times;</button>
+    `;
 
-      input.value = keys.join("+"); // Display detected keys
-  });
-});
+    // Handle key detection
+    const hotkeyInput = div.querySelector(".hotkey");
+    hotkeyInput.addEventListener("keydown", (event) => {
+        event.preventDefault();
+        let keys = [];
+        if (event.altKey) keys.push("Alt");
+        if (event.shiftKey) keys.push("Shift");
+        if (event.ctrlKey) keys.push("Ctrl");
+        if (event.metaKey) keys.push("Meta");
 
-document.getElementById("save").addEventListener("click", () => {
-  const settings = {
-      hotkeys: {
-          1: document.getElementById("hotkey1").value,
-          2: document.getElementById("hotkey2").value,
-          3: document.getElementById("hotkey3").value
-      },
-      texts: {
-          1: document.getElementById("text1").value,
-          2: document.getElementById("text2").value,
-          3: document.getElementById("text3").value
-      }
-  };
+        if (!["Alt", "Shift", "Ctrl", "Meta"].includes(event.key)) {
+            keys.push(event.key.toUpperCase());
+        }
 
-  chrome.storage.sync.set(settings, () => {
-      console.log("Hotkeys and texts saved!", settings);
-  });
-});
+        hotkeyInput.value = keys.join("+");
+    });
 
-// ✅ Load saved values when popup opens
+    // Handle removal
+    div.querySelector(".remove").addEventListener("click", () => {
+        div.remove();
+    });
+
+    hotkeyContainer.appendChild(div);
+}
+
+// Load saved hotkeys
 window.onload = () => {
-  chrome.storage.sync.get(["hotkeys", "texts"], (result) => {
-      if (result.hotkeys) {
-          document.getElementById("hotkey1").value = result.hotkeys[1] || "";
-          document.getElementById("hotkey2").value = result.hotkeys[2] || "";
-          document.getElementById("hotkey3").value = result.hotkeys[3] || "";
-      }
-      if (result.texts) {
-          document.getElementById("text1").value = result.texts[1] || "";
-          document.getElementById("text2").value = result.texts[2] || "";
-          document.getElementById("text3").value = result.texts[3] || "";
-      }
-  });
+    chrome.storage.sync.get("hotkeys", (result) => {
+        const hotkeys = result.hotkeys || [];
+        hotkeys.forEach((item, index) => {
+            createHotkeyInput(index, item.hotkey, item.text);
+        });
+    });
 };
+
+// Add new hotkey
+addHotkeyButton.addEventListener("click", () => {
+    createHotkeyInput(Date.now()); // Use timestamp as a unique ID
+});
+
+// Save hotkeys
+document.getElementById("save").addEventListener("click", () => {
+    const hotkeyEntries = document.querySelectorAll(".hotkey-entry");
+    const hotkeys = Array.from(hotkeyEntries).map(entry => ({
+        hotkey: entry.querySelector(".hotkey").value,
+        text: entry.querySelector(".text").value
+    }));
+
+    chrome.storage.sync.set({ hotkeys }, () => {
+        console.log("Hotkeys saved!", hotkeys);
+    });
+});
