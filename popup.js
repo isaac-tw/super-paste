@@ -1,3 +1,22 @@
+document.querySelectorAll("input.hotkey").forEach(input => {
+  input.addEventListener("keydown", (event) => {
+      event.preventDefault(); // Prevent default browser actions
+
+      let keys = [];
+      if (event.altKey) keys.push("Alt");
+      if (event.shiftKey) keys.push("Shift");
+      if (event.ctrlKey) keys.push("Ctrl");
+      if (event.metaKey) keys.push("Meta"); // Cmd on Mac
+
+      // Only store the last non-modifier key
+      if (!["Alt", "Shift", "Ctrl", "Meta"].includes(event.key)) {
+          keys.push(event.key.toUpperCase());
+      }
+
+      input.value = keys.join("+"); // Display detected keys
+  });
+});
+
 document.getElementById("save").addEventListener("click", () => {
   const settings = {
       hotkeys: {
@@ -17,6 +36,7 @@ document.getElementById("save").addEventListener("click", () => {
   });
 });
 
+// ✅ Load saved values when popup opens
 window.onload = () => {
   chrome.storage.sync.get(["hotkeys", "texts"], (result) => {
       if (result.hotkeys) {
