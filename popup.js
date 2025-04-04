@@ -8,7 +8,7 @@ function createHotkeyInput(index, hotkey = "", text = "") {
 
     div.innerHTML = `
         <label>Hotkey: <input class="hotkey" type="text" placeholder="Press keys..." readonly value="${hotkey}"></label>
-        <input class="text" type="text" placeholder="Text to paste" value="${text}">
+        <textarea class="textarea" placeholder="Text to paste" rows="1">${text}</textarea>
         <button class="remove">&times;</button>
     `;
 
@@ -57,7 +57,7 @@ document.getElementById("save").addEventListener("click", () => {
     const hotkeyEntries = document.querySelectorAll(".hotkey-entry");
     const hotkeys = Array.from(hotkeyEntries).map(entry => ({
         hotkey: entry.querySelector(".hotkey").value,
-        text: entry.querySelector(".text").value
+        text: entry.querySelector(".textarea").value
     }));
 
     chrome.storage.sync.set({ hotkeys }, () => {
