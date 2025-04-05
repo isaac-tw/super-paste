@@ -1,3 +1,11 @@
+if (navigator.permissions) {
+  navigator.permissions.query({ name: "clipboard-write" }).then(result => {
+    console.log("Clipboard write permission:", result.state);
+  }).catch(err => {
+    console.warn("Clipboard permission check failed:", err);
+  });
+}
+
 chrome.storage.sync.get("hotkeys", (result) => {
   const hotkeys = result.hotkeys || [];
 
@@ -30,7 +38,7 @@ function matchHotkey(event, hotkeyString) {
 
 function pasteText(text) {
   if (!text) return;
-
+  
   const activeElement = document.activeElement;
   if (activeElement && (activeElement.isContentEditable || activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA")) {
       activeElement.focus();
