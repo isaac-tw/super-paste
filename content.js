@@ -20,7 +20,7 @@ chrome.storage.sync.get("hotkeys", (result) => {
 });
 
 function matchHotkey(event, hotkeyString) {
-  if (!hotkeyString) return false;
+  if (!hotkeyString || !event.key) return false;
 
   const keys = hotkeyString.toLowerCase().split("+");
   const keyPressed = event.key.toLowerCase();
