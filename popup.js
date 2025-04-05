@@ -64,3 +64,37 @@ document.getElementById("save").addEventListener("click", () => {
         console.log("Hotkeys saved!", hotkeys);
     });
 });
+
+document.getElementById('export-config').addEventListener('click', async () => {
+    const config = await chrome.storage.sync.get(null); // Get all stored data
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'config.json';
+    a.click();
+
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-config-btn').addEventListener('click', () => {
+    document.getElementById('import-config').click();
+});
+
+document.getElementById('import-config').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const importedConfig = JSON.parse(e.target.result);
+            await chrome.storage.sync.set(importedConfig); // Overwrite current config
+            alert('Configuration imported successfully!');
+        } catch (error) {
+            alert('Failed to import configuration. Please ensure the file is valid.');
+        }
+    };
+    reader.readAsText(file);
+});
