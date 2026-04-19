@@ -7,6 +7,7 @@ if (navigator.permissions) {
 }
 
 let hotkeys = [];
+let statusToastTimeoutId = null;
 
 loadHotkeys();
 document.addEventListener("keydown", handleKeydown);
@@ -64,8 +65,8 @@ function pasteText(text) {
     return;
   }
 
-  console.warn("No editable field detected. Text copied to clipboard instead.");
-  navigator.clipboard.writeText(text);
+  console.warn("No editable field detected. Copying snippet to clipboard instead.");
+  copyTextToClipboard(text);
 }
 
 function insertTextIntoActiveElement(text) {
@@ -208,4 +209,63 @@ function dispatchInputEvent(element, text) {
   } catch (error) {
     element.dispatchEvent(new Event("input", { bubbles: true }));
   }
+}
+
+function copyTextToClipboard(text) {
+  if (!navigator.clipboard?.writeText) {
+    showStatusToast("Clipboard access is unavailable. Focus a text field and try again.", "error");
+    return;
+  }
+
+  navigator.clipboard.writeText(text).then(() => {
+    showStatusToast("Snippet copied to clipboard.");
+  }).catch((error) => {
+    console.warn("Clipboard write failed:", error);
+    showStatusToast("Clipboard copy failed. Focus a text field and try again.", "error");
+  });
+}
+
+function showStatusToast(message, tone = "info") {
+  const root = document.body || document.documentElement;
+  if (!root) {
+    return;
+  }
+
+  let toast = document.getElementById("super-paste-status-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "super-paste-status-toast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    root.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.style.cssText = [
+    "position: fixed",
+    "right: 16px",
+    "bottom: 16px",
+    "z-index: 2147483647",
+    "max-width: min(320px, calc(100vw - 32px))",
+    "padding: 10px 14px",
+    "border-radius: 10px",
+    "background: #1f2937",
+    "color: #ffffff",
+    "box-shadow: 0 10px 30px rgba(15, 23, 42, 0.28)",
+    "font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    "pointer-events: none",
+    "display: block"
+  ].join("; ");
+
+  if (tone === "error") {
+    toast.style.background = "#7f1d1d";
+  }
+
+  if (statusToastTimeoutId !== null) {
+    window.clearTimeout(statusToastTimeoutId);
+  }
+
+  statusToastTimeoutId = window.setTimeout(() => {
+    toast.style.display = "none";
+  }, 2200);
 }
