@@ -6,18 +6,34 @@ if (navigator.permissions) {
   });
 }
 
-chrome.storage.sync.get("hotkeys", (result) => {
-  const hotkeys = result.hotkeys || [];
+let hotkeys = [];
 
-  document.addEventListener("keydown", (event) => {
-      hotkeys.forEach(({ hotkey, text }) => {
-          if (matchHotkey(event, hotkey)) {
-              event.preventDefault();
-              pasteText(text);
-          }
-      });
+loadHotkeys();
+document.addEventListener("keydown", handleKeydown);
+chrome.storage.onChanged.addListener(handleStorageChange);
+
+function loadHotkeys() {
+  chrome.storage.sync.get("hotkeys", (result) => {
+    hotkeys = Array.isArray(result.hotkeys) ? result.hotkeys : [];
   });
-});
+}
+
+function handleKeydown(event) {
+  hotkeys.forEach(({ hotkey, text }) => {
+    if (matchHotkey(event, hotkey)) {
+      event.preventDefault();
+      pasteText(text);
+    }
+  });
+}
+
+function handleStorageChange(changes, areaName) {
+  if (areaName !== "sync" || !changes.hotkeys) {
+    return;
+  }
+
+  hotkeys = Array.isArray(changes.hotkeys.newValue) ? changes.hotkeys.newValue : [];
+}
 
 function matchHotkey(event, hotkeyString) {
   if (!hotkeyString || !event.key) return false;
