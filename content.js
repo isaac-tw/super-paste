@@ -54,13 +54,153 @@ function matchHotkey(event, hotkeyString) {
 
 function pasteText(text) {
   if (!text) return;
-  
+
+  if (insertTextIntoActiveElement(text) || insertTextIntoSelectedEditable(text)) {
+    return;
+  }
+
+  console.warn("No editable field detected. Text copied to clipboard instead.");
+  navigator.clipboard.writeText(text);
+}
+
+function insertTextIntoActiveElement(text) {
   const activeElement = document.activeElement;
-  if (activeElement && (activeElement.isContentEditable || activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA")) {
-      activeElement.focus();
-      document.execCommand("insertText", false, text);
+
+  if (!activeElement) {
+    return false;
+  }
+
+  if (isTextField(activeElement)) {
+    return insertTextIntoField(activeElement, text);
+  }
+
+  if (activeElement.isContentEditable) {
+    return insertTextIntoContentEditable(activeElement, text);
+  }
+
+  return false;
+}
+
+function insertTextIntoSelectedEditable(text) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return false;
+  }
+
+  const editableRoot = getContentEditableRoot(selection.anchorNode);
+  if (!editableRoot) {
+    return false;
+  }
+
+  return insertTextIntoContentEditable(editableRoot, text);
+}
+
+function isTextField(element) {
+  if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+    return false;
+  }
+
+  return !element.disabled && !element.readOnly;
+}
+
+function insertTextIntoField(field, text) {
+  field.focus();
+
+  const start = typeof field.selectionStart === "number" ? field.selectionStart : field.value.length;
+  const end = typeof field.selectionEnd === "number" ? field.selectionEnd : start;
+
+  try {
+    field.setRangeText(text, start, end, "end");
+  } catch (error) {
+    console.warn("Text insertion failed for the active field:", error);
+    return false;
+  }
+
+  dispatchInputEvent(field, text);
+  return true;
+}
+
+function insertTextIntoContentEditable(editableRoot, text) {
+  const selection = window.getSelection();
+  if (!selection) {
+    return false;
+  }
+
+  editableRoot.focus();
+
+  let range;
+  if (selection.rangeCount > 0) {
+    range = selection.getRangeAt(0);
   } else {
-      console.warn("No editable field detected. Text copied to clipboard instead.");
-      navigator.clipboard.writeText(text);
+    range = document.createRange();
+    range.selectNodeContents(editableRoot);
+    range.collapse(false);
+  }
+
+  if (!editableRoot.contains(range.commonAncestorContainer)) {
+    range = document.createRange();
+    range.selectNodeContents(editableRoot);
+    range.collapse(false);
+  }
+
+  const { fragment, lastNode } = createEditableFragment(text);
+  range.deleteContents();
+  range.insertNode(fragment);
+
+  if (lastNode) {
+    range.setStartAfter(lastNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  dispatchInputEvent(editableRoot, text);
+  return true;
+}
+
+function createEditableFragment(text) {
+  const normalizedText = text.replace(/\r\n?/g, "\n");
+  const fragment = document.createDocumentFragment();
+  const parts = normalizedText.split("\n");
+  let lastNode = null;
+
+  parts.forEach((part, index) => {
+    if (index > 0) {
+      lastNode = document.createElement("br");
+      fragment.appendChild(lastNode);
+    }
+
+    if (part) {
+      lastNode = document.createTextNode(part);
+      fragment.appendChild(lastNode);
+    }
+  });
+
+  return { fragment, lastNode };
+}
+
+function getContentEditableRoot(node) {
+  let currentNode = node instanceof Element ? node : node?.parentElement;
+
+  while (currentNode) {
+    if (currentNode.isContentEditable) {
+      return currentNode;
+    }
+
+    currentNode = currentNode.parentElement;
+  }
+
+  return null;
+}
+
+function dispatchInputEvent(element, text) {
+  try {
+    element.dispatchEvent(new InputEvent("input", {
+      bubbles: true,
+      inputType: "insertText",
+      data: text
+    }));
+  } catch (error) {
+    element.dispatchEvent(new Event("input", { bubbles: true }));
   }
 }
