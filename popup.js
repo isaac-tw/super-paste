@@ -72,7 +72,7 @@ document.getElementById('export-config').addEventListener('click', async () => {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'config.json';
+    a.download = 'super-paste-config.json';
     a.click();
 
     URL.revokeObjectURL(url);

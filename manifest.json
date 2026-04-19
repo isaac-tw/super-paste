@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Quick Paste Hotkeys",
-  "version": "1.0",
-  "permissions": ["storage", "activeTab"],
+  "name": "Super Paste",
+  "short_name": "Super Paste",
+  "version": "1.0.0",
+  "description": "Save reusable snippets and paste them into editable fields with your own keyboard shortcuts.",
+  "permissions": ["storage"],
   "action": {
+    "default_title": "Super Paste",
     "default_popup": "popup.html"
   },
   "content_scripts": [
