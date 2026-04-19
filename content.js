@@ -19,12 +19,17 @@ function loadHotkeys() {
 }
 
 function handleKeydown(event) {
-  hotkeys.forEach(({ hotkey, text }) => {
-    if (matchHotkey(event, hotkey)) {
-      event.preventDefault();
-      pasteText(text);
-    }
-  });
+  if (event.defaultPrevented) {
+    return;
+  }
+
+  const matchedHotkey = hotkeys.find(({ hotkey }) => matchHotkey(event, hotkey));
+  if (!matchedHotkey) {
+    return;
+  }
+
+  event.preventDefault();
+  pasteText(matchedHotkey.text);
 }
 
 function handleStorageChange(changes, areaName) {
