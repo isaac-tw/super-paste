@@ -11,9 +11,18 @@ function createHotkeyInput(index, hotkey = "", text = "", options = {}) {
     div.dataset.index = index;
 
     div.innerHTML = `
-        <label>Hotkey: <input class="hotkey" type="text" placeholder="Press keys..." readonly></label>
-        <textarea class="textarea" placeholder="Text to paste" rows="1"></textarea>
-        <button class="remove">&times;</button>
+        <div class="entry-head">
+            <div class="entry-title">Snippet</div>
+            <button class="remove" type="button" aria-label="Remove snippet">&times;</button>
+        </div>
+        <label class="field">
+            <span class="field-label">Shortcut</span>
+            <input class="hotkey" type="text" placeholder="Press keys..." readonly>
+        </label>
+        <label class="field">
+            <span class="field-label">Text</span>
+            <textarea class="textarea" placeholder="Text to paste" rows="3"></textarea>
+        </label>
     `;
 
     // Handle key detection
