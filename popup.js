@@ -1,9 +1,11 @@
 const hotkeyContainer = document.getElementById("hotkey-container");
 const addHotkeyButton = document.getElementById("add-hotkey");
 const saveButton = document.getElementById("save");
+const saveStatus = document.getElementById("save-status");
+const emptyState = document.getElementById("empty-state");
 const importConfigInput = document.getElementById("import-config");
 
-function createHotkeyInput(index, hotkey = "", text = "") {
+function createHotkeyInput(index, hotkey = "", text = "", options = {}) {
     const div = document.createElement("div");
     div.classList.add("hotkey-entry");
     div.dataset.index = index;
@@ -33,14 +35,29 @@ function createHotkeyInput(index, hotkey = "", text = "") {
         }
 
         hotkeyInput.value = keys.join("+");
+        setStatus("Shortcut captured. Save when you're ready.");
+    });
+
+    textarea.addEventListener("input", () => {
+        setStatus("Unsaved changes.");
     });
 
     // Handle removal
     div.querySelector(".remove").addEventListener("click", () => {
         div.remove();
+        updateEmptyState();
+        setStatus("Snippet removed. Save changes to keep it.");
     });
 
     hotkeyContainer.appendChild(div);
+    updateEmptyState();
+
+    if (options.focusNewEntry) {
+        window.requestAnimationFrame(() => {
+            div.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            hotkeyInput.focus();
+        });
+    }
 
     return div;
 }
@@ -51,6 +68,16 @@ function renderHotkeys(hotkeys) {
         createHotkeyInput(index, item.hotkey, item.text);
     });
 
+    updateEmptyState();
+}
+
+function updateEmptyState() {
+    emptyState.hidden = hotkeyContainer.children.length > 0;
+}
+
+function setStatus(message, tone = "") {
+    saveStatus.textContent = message;
+    saveStatus.dataset.tone = tone;
 }
 
 function normalizeHotkeys(hotkeys) {
@@ -73,7 +100,8 @@ window.onload = () => {
 
 // Add new hotkey
 addHotkeyButton.addEventListener("click", () => {
-    createHotkeyInput(Date.now()); // Use timestamp as a unique ID
+    createHotkeyInput(Date.now(), "", "", { focusNewEntry: true }); // Use timestamp as a unique ID
+    setStatus("New snippet added. Capture a shortcut and save it.");
 });
 
 // Save hotkeys
@@ -86,6 +114,7 @@ saveButton.addEventListener("click", () => {
 
     chrome.storage.sync.set({ hotkeys }, () => {
         console.log("Hotkeys saved!", hotkeys);
+        setStatus("Saved to Chrome sync.", "success");
     });
 });
 
@@ -98,6 +127,7 @@ document.getElementById('export-config').addEventListener('click', async () => {
     a.href = url;
     a.download = 'super-paste-config.json';
     a.click();
+    setStatus("Configuration exported.");
 
     URL.revokeObjectURL(url);
 });
@@ -116,9 +146,9 @@ importConfigInput.addEventListener('change', async (event) => {
             const importedConfig = JSON.parse(e.target.result);
             await chrome.storage.sync.set(importedConfig); // Overwrite current config
             renderHotkeys(importedConfig.hotkeys);
-            alert('Configuration imported successfully!');
+            setStatus("Configuration imported. Save if you make more changes.", "success");
         } catch (error) {
-            alert('Failed to import configuration. Please ensure the file is valid.');
+            setStatus("Import failed. Please use a valid Super Paste config file.", "error");
         }
 
         importConfigInput.value = "";
